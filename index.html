@@ -3,17 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <title>Voltage Monitor</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    #status-bar {
+      width: 25px;
+      height: 80vh;
+      border-radius: 12px;
+      margin-right: 30px;
+      background-color: gray;
+      transition: background-color 0.3s ease;
+      position: relative;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .blink {
+      animation: blink 1s infinite;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    #voltage-value {
+      font-size: 5rem;
+      font-weight: 900;
+      color: #222;
+      margin-bottom: 0;
+    }
+    #voltage-unit {
+      font-size: 1.8rem;
+      color: #555;
+      margin-top: 0;
+      letter-spacing: 1.5px;
+    }
+  </style>
 </head>
 <body>
 
-  <h2>Voltage: <span id="voltage">--</span> V</h2>
+  <div id="status-bar"></div>
+
+  <div id="container">
+    <h1 id="voltage-value">--.--</h1>
+    <h3 id="voltage-unit">Volts</h3>
+  </div>
 
   <!-- Firebase v8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyD-b0U1cERqOW05HPE7UNVEv6emCoMopDM",
       authDomain: "esponline-e1344.firebaseapp.com",
@@ -21,19 +70,37 @@
       projectId: "esponline-e1344"
     };
 
-    // Initialize Firebase app
     firebase.initializeApp(firebaseConfig);
-
-    // Reference to the voltage node
     const voltageRef = firebase.database().ref("voltage");
 
-    // Listen for value changes
+    const voltageValue = document.getElementById("voltage-value");
+    const statusBar = document.getElementById("status-bar");
+
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
-      if (voltage !== null) {
-        document.getElementById("voltage").innerText = parseFloat(voltage).toFixed(2);
-      } else {
-        document.getElementById("voltage").innerText = "--";
+
+      if (voltage === null || isNaN(voltage)) {
+        voltageValue.textContent = "--.--";
+        statusBar.style.backgroundColor = 'gray';
+        statusBar.classList.remove('blink');
+        return;
+      }
+
+      const voltNum = parseFloat(voltage);
+      voltageValue.textContent = voltNum.toFixed(2);
+
+      if (voltNum < 10) {
+        statusBar.style.backgroundColor = 'red';
+        statusBar.classList.remove('blink');
+      } else if (voltNum >= 10 && voltNum <= 12) {
+        statusBar.style.backgroundColor = 'yellow';
+        statusBar.classList.remove('blink');
+      } else if (voltNum > 12 && voltNum <= 14) {
+        statusBar.style.backgroundColor = 'green';
+        statusBar.classList.remove('blink');
+      } else if (voltNum > 14) {
+        statusBar.style.backgroundColor = 'green';
+        statusBar.classList.add('blink');
       }
     });
   </script>
