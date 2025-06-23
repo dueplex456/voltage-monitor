@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta charset="UTF-8" />
   <title>Voltage Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     body {
       margin: 0;
@@ -48,6 +48,12 @@
       margin-top: 0;
       letter-spacing: 1.5px;
     }
+    #battery-percentage {
+      margin-top: 10px;
+      font-size: 2rem;
+      color: #444;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -57,6 +63,7 @@
   <div id="container">
     <h1 id="voltage-value">--.--</h1>
     <h3 id="voltage-unit">Volts</h3>
+    <div id="battery-percentage">Battery: --%</div>
   </div>
 
   <!-- Firebase v8 SDK -->
@@ -76,12 +83,22 @@
 
     const voltageValue = document.getElementById("voltage-value");
     const statusBar = document.getElementById("status-bar");
+    const batteryPercentEl = document.getElementById("battery-percentage");
+
+    function voltageToPercent(voltage) {
+      const minV = 10.0;
+      const maxV = 14.4;
+      if (voltage <= minV) return 0;
+      if (voltage >= maxV) return 100;
+      return Math.round(((voltage - minV) / (maxV - minV)) * 100);
+    }
 
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
 
       if (voltage === null || isNaN(voltage)) {
         voltageValue.textContent = "--.--";
+        batteryPercentEl.textContent = "Battery: --%";
         statusBar.style.backgroundColor = 'gray';
         statusBar.classList.remove('blink');
         return;
@@ -89,6 +106,10 @@
 
       const voltNum = parseFloat(voltage);
       voltageValue.textContent = voltNum.toFixed(2);
+
+      // Battery percent calculation
+      const percent = voltageToPercent(voltNum);
+      batteryPercentEl.textContent = `Battery: ${percent}%`;
 
       if (voltNum < 10) {
         statusBar.style.backgroundColor = 'red';
