@@ -1,83 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Voltage Monitor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0f2f5;
-      display: flex;
-      height: 100vh;
-      align-items: center;
-      justify-content: center;
-    }
-    #status-bar {
-      width: 25px;
-      height: 80vh;
-      border-radius: 12px;
-      margin-right: 30px;
-      background-color: #ddd;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: flex-end;
-    }
-    #fill-bar {
-      width: 100%;
-      height: 0;
-      border-radius: 12px 12px 0 0;
-      background-color: green;
-      transition: height 0.5s ease, background-color 0.5s ease;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-    .blink {
-      animation: blink 1s infinite;
-    }
-    #container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      user-select: none;
-    }
-    #voltage-value {
-      font-size: 4.5rem;
-      font-weight: 900;
-      color: #222;
-      margin-bottom: 0;
-    }
-    #voltage-unit {
-      font-size: 1.8rem;
-      color: #555;
-      margin-top: 0;
-      letter-spacing: 1.5px;
-    }
-    #battery-percentage {
-      margin-top: 10px;
-      font-size: 2rem;
-      color: #444;
-      font-weight: 600;
-    }
-    #battery-status {
-      margin-top: 8px;
-      font-size: 1.6rem;
-      font-weight: 600;
-      color: #666;
-    }
-    .icon {
-      margin-right: 8px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Voltage Monitor with Indicators</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
+  #status-bar-container {
+    position: relative;
+    width: 60px; /* wider to fit indicators */
+    height: 80vh;
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+  }
+  #status-bar {
+    width: 25px;
+    height: 100%;
+    border-radius: 12px;
+    background-color: #ddd;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+  #fill-bar {
+    width: 100%;
+    height: 0;
+    border-radius: 12px 12px 0 0;
+    background-color: green;
+    transition: height 0.5s ease, background-color 0.5s ease;
+  }
+  .indicator-container {
+    position: absolute;
+    left: 0;
+    height: 100%;
+    width: 60px;
+    pointer-events: none;
+  }
+  .indicator {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+  .tick {
+    width: 12px;
+    height: 2px;
+    background-color: #555;
+    margin-right: 5px;
+    border-radius: 1px;
+  }
+  .label {
+    font-size: 1rem;
+    color: #555;
+    user-select: none;
+  }
+  /* Positions relative to 10V to 14.4V range */
+  .indicator-10 { bottom: 0%; }
+  .indicator-12 { bottom: 50%; }
+  .indicator-14 { bottom: 83%; } /* approx for 14V */
+  .indicator-14_4 { bottom: 100%; } /* max voltage label */
+
+  #container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+  #voltage-value {
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: #222;
+    margin-bottom: 0;
+  }
+  #voltage-unit {
+    font-size: 1.8rem;
+    color: #555;
+    margin-top: 0;
+    letter-spacing: 1.5px;
+  }
+  #battery-percentage {
+    margin-top: 10px;
+    font-size: 2rem;
+    color: #444;
+    font-weight: 600;
+  }
+  #battery-status {
+    margin-top: 8px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #666;
+  }
+  .icon {
+    margin-right: 8px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .blink {
+    animation: blink 1s infinite;
+  }
+</style>
 </head>
 <body>
 
-  <div id="status-bar">
-    <div id="fill-bar"></div>
+  <div id="status-bar-container">
+    <div class="indicator-container">
+      <div class="indicator indicator-14_4">
+        <div class="tick"></div><div class="label">14.4V</div>
+      </div>
+      <div class="indicator indicator-14">
+        <div class="tick"></div><div class="label">14V</div>
+      </div>
+      <div class="indicator indicator-12">
+        <div class="tick"></div><div class="label">12V</div>
+      </div>
+      <div class="indicator indicator-10">
+        <div class="tick"></div><div class="label">10V</div>
+      </div>
+    </div>
+
+    <div id="status-bar">
+      <div id="fill-bar"></div>
+    </div>
   </div>
 
   <div id="container">
@@ -103,7 +158,6 @@
     const voltageRef = firebase.database().ref("voltage");
 
     const voltageValue = document.getElementById("voltage-value");
-    const statusBar = document.getElementById("status-bar");
     const fillBar = document.getElementById("fill-bar");
     const batteryPercentEl = document.getElementById("battery-percentage");
     const batteryStatusEl = document.getElementById("battery-status");
@@ -139,7 +193,6 @@
       const percent = voltageToPercent(voltNum);
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
 
-      // Animate fill height & color
       fillBar.style.height = percent + '%';
 
       if (voltNum < 10) {
@@ -156,7 +209,6 @@
         fillBar.classList.add('blink');
       }
 
-      // Charging/discharging detection with tolerance
       const tolerance = 0.03;
       if (lastVoltage !== null) {
         if (Math.abs(voltNum - lastVoltage) < tolerance) {
