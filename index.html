@@ -54,6 +54,12 @@
       color: #444;
       font-weight: 600;
     }
+    #battery-status {
+      margin-top: 8px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -64,6 +70,7 @@
     <h1 id="voltage-value">--.--</h1>
     <h3 id="voltage-unit">Volts</h3>
     <div id="battery-percentage">Battery: --%</div>
+    <div id="battery-status">Status: --</div>
   </div>
 
   <!-- Firebase v8 SDK -->
@@ -84,6 +91,9 @@
     const voltageValue = document.getElementById("voltage-value");
     const statusBar = document.getElementById("status-bar");
     const batteryPercentEl = document.getElementById("battery-percentage");
+    const batteryStatusEl = document.getElementById("battery-status");
+
+    let lastVoltage = null;
 
     function voltageToPercent(voltage) {
       const minV = 10.0;
@@ -99,18 +109,37 @@
       if (voltage === null || isNaN(voltage)) {
         voltageValue.textContent = "--.--";
         batteryPercentEl.textContent = "Battery: --%";
+        batteryStatusEl.textContent = "Status: --";
         statusBar.style.backgroundColor = 'gray';
         statusBar.classList.remove('blink');
+        lastVoltage = null;
         return;
       }
 
       const voltNum = parseFloat(voltage);
       voltageValue.textContent = voltNum.toFixed(2);
 
-      // Battery percent calculation
+      // Battery percentage
       const percent = voltageToPercent(voltNum);
       batteryPercentEl.textContent = `Battery: ${percent}%`;
 
+      // Charging/discharging detection
+      if (lastVoltage !== null) {
+        if (voltNum > lastVoltage) {
+          batteryStatusEl.textContent = "Status: Charging";
+          batteryStatusEl.style.color = "blue";
+        } else if (voltNum < lastVoltage) {
+          batteryStatusEl.textContent = "Status: Discharging";
+          batteryStatusEl.style.color = "orange";
+        } else {
+          batteryStatusEl.textContent = "Status: Idle";
+          batteryStatusEl.style.color = "gray";
+        }
+      }
+
+      lastVoltage = voltNum;
+
+      // Voltage level color
       if (voltNum < 10) {
         statusBar.style.backgroundColor = 'red';
         statusBar.classList.remove('blink');
