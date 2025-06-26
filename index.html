@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Voltage Monitor with Graph</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
   <style>
     body {
       margin: 0;
@@ -14,6 +14,9 @@
       align-items: center;
       justify-content: flex-start;
       padding-top: 20px;
+      height: auto;
+      min-height: 100vh;
+      overflow-y: auto;
     }
     #main-content {
       display: flex;
@@ -108,6 +111,7 @@
     }
     canvas {
       max-width: 95vw;
+      touch-action: none; /* Enable mobile gestures */
     }
     @keyframes blink {
       0%, 100% { opacity: 1; }
@@ -245,7 +249,7 @@
             pan: {
               enabled: true,
               mode: 'x',
-              modifierKey: 'ctrl'
+              modifierKey: null // 🔑 Required for mobile drag!
             },
             zoom: {
               wheel: { enabled: true },
@@ -269,17 +273,14 @@
       return result;
     }
 
-    let voltageHistory = [];
-
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
-
       if (voltage === null || isNaN(voltage)) return;
 
       const voltNum = parseFloat(voltage);
       voltageValue.innerHTML = `<span class="icon">🔌</span>${voltNum.toFixed(2)}`;
 
-      // Update % bar
+      // Fill bar and % update
       const percent = voltageToPercent(voltNum);
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
       fillBar.style.height = percent + '%';
@@ -292,25 +293,23 @@
         fillBar.classList.add('blink');
       }
 
-      // Graph logic
+      // Graph update
       const now = new Date();
       const label = now.toLocaleTimeString().split(" ")[0];
-      const chart = voltageChart;
 
-      if (chart.data.labels.length > 120) {
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
-        chart.data.datasets[1].data.shift();
+      if (voltageChart.data.labels.length > 120) {
+        voltageChart.data.labels.shift();
+        voltageChart.data.datasets[0].data.shift();
+        voltageChart.data.datasets[1].data.shift();
       }
 
-      chart.data.labels.push(label);
-      chart.data.datasets[0].data.push(voltNum);
+      voltageChart.data.labels.push(label);
+      voltageChart.data.datasets[0].data.push(voltNum);
 
-      const raw = chart.data.datasets[0].data;
-      const avg = movingAverage(raw, 5);
-      chart.data.datasets[1].data = avg;
+      const avg = movingAverage(voltageChart.data.datasets[0].data, 5);
+      voltageChart.data.datasets[1].data = avg;
 
-      chart.update();
+      voltageChart.update();
     });
   </script>
 
