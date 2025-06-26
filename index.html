@@ -1,132 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Voltage Monitor with Smart Status</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<style>
-  body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5;
-    display: flex;
-    height: 100vh;
-    align-items: center;
-    justify-content: center;
-  }
-  #status-bar-container {
-    position: relative;
-    width: 70px;
-    height: 80vh;
-    margin-right: 20px;
-  }
-  #status-bar {
-    width: 25px;
-    height: 100%;
-    border-radius: 12px;
-    background-color: #ddd;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-    margin-left: 40px;
-  }
-  #fill-bar {
-    width: 100%;
-    height: 0;
-    border-radius: 12px 12px 0 0;
-    background-color: green;
-    transition: height 0.5s ease, background-color 0.5s ease;
-  }
-  #indicators {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 40px;
-    height: 100%;
-    pointer-events: none;
-  }
-  .indicator {
-    position: absolute;
-    left: 0;
-    width: 40px;
-    display: flex;
-    align-items: center;
-  }
-  .tick {
-    width: 15px;
-    height: 2px;
-    background-color: #555;
-    margin-right: 6px;
-    border-radius: 1px;
-  }
-  .label {
-    font-size: 1rem;
-    color: #555;
-    user-select: none;
-    white-space: nowrap;
-  }
-  #container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    user-select: none;
-  }
-  #voltage-value {
-    font-size: 4.5rem;
-    font-weight: 900;
-    color: #222;
-    margin-bottom: 0;
-  }
-  #voltage-unit {
-    font-size: 1.8rem;
-    color: #555;
-    margin-top: 0;
-    letter-spacing: 1.5px;
-  }
-  #battery-percentage {
-    margin-top: 10px;
-    font-size: 2rem;
-    color: #444;
-    font-weight: 600;
-  }
-  #battery-status {
-    margin-top: 8px;
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: #666;
-  }
-  .icon {
-    margin-right: 8px;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .blink {
-    animation: blink 1s infinite;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Voltage Monitor with Graph</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 20px;
+    }
+    #main-content {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    #status-bar-container {
+      position: relative;
+      width: 70px;
+      height: 80vh;
+      margin-right: 20px;
+    }
+    #status-bar {
+      width: 25px;
+      height: 100%;
+      border-radius: 12px;
+      background-color: #ddd;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      margin-left: 40px;
+    }
+    #fill-bar {
+      width: 100%;
+      height: 0;
+      border-radius: 12px 12px 0 0;
+      background-color: green;
+      transition: height 0.5s ease, background-color 0.5s ease;
+    }
+    #indicators {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 100%;
+      pointer-events: none;
+    }
+    .indicator {
+      position: absolute;
+      left: 0;
+      width: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .tick {
+      width: 15px;
+      height: 2px;
+      background-color: #555;
+      margin-right: 6px;
+      border-radius: 1px;
+    }
+    .label {
+      font-size: 1rem;
+      color: #555;
+      user-select: none;
+      white-space: nowrap;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    #voltage-value {
+      font-size: 4.5rem;
+      font-weight: 900;
+      color: #222;
+      margin-bottom: 0;
+    }
+    #voltage-unit {
+      font-size: 1.8rem;
+      color: #555;
+      margin-top: 0;
+      letter-spacing: 1.5px;
+    }
+    #battery-percentage {
+      margin-top: 10px;
+      font-size: 2rem;
+      color: #444;
+      font-weight: 600;
+    }
+    #battery-status {
+      margin-top: 8px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #666;
+    }
+    .icon {
+      margin-right: 8px;
+    }
+    canvas {
+      max-width: 95vw;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .blink {
+      animation: blink 1s infinite;
+    }
+  </style>
 </head>
 <body>
 
-  <div id="status-bar-container">
-    <div id="indicators"></div>
-    <div id="status-bar">
-      <div id="fill-bar"></div>
+  <div id="main-content">
+    <div id="status-bar-container">
+      <div id="indicators"></div>
+      <div id="status-bar">
+        <div id="fill-bar"></div>
+      </div>
+    </div>
+
+    <div id="container">
+      <h1 id="voltage-value"><span class="icon">🔌</span>--.--</h1>
+      <h3 id="voltage-unit">Volts</h3>
+      <div id="battery-percentage"><span class="icon">🔋</span>Battery: --%</div>
+      <div id="battery-status"><span class="icon">🔄</span>Status: --</div>
     </div>
   </div>
 
-  <div id="container">
-    <h1 id="voltage-value"><span class="icon">🔌</span>--.--</h1>
-    <h3 id="voltage-unit">Volts</h3>
-    <div id="battery-percentage"><span class="icon">🔋</span>Battery: --%</div>
-    <div id="battery-status"><span class="icon" id="status-icon">🔄</span>Status: --</div>
-  </div>
+  <canvas id="voltageGraph" width="400" height="200"></canvas>
 
   <!-- Firebase v8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -147,7 +164,7 @@
 
     let lastVoltage = null;
     const voltageHistory = [];
-    const historyIntervalMs = 5000; // 5 seconds window
+    const historyIntervalMs = 5000;
 
     const minV = 10.0;
     const maxV = 14.4;
@@ -187,58 +204,84 @@
 
     createIndicators();
 
+    // Chart setup
+    const ctx = document.getElementById('voltageGraph').getContext('2d');
+    const voltageChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Voltage (V)',
+          data: [],
+          backgroundColor: 'rgba(0, 128, 255, 0.1)',
+          borderColor: 'rgba(0, 128, 255, 1)',
+          borderWidth: 2,
+          tension: 0.2,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            min: 9,
+            max: 15,
+            ticks: { color: '#444' }
+          },
+          x: {
+            ticks: { display: false }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        },
+        animation: false
+      }
+    });
+
+    function updateGraph(volt) {
+      const now = new Date();
+      const timeLabel = now.toLocaleTimeString().split(" ")[0];
+
+      if (voltageChart.data.labels.length > 60) {
+        voltageChart.data.labels.shift();
+        voltageChart.data.datasets[0].data.shift();
+      }
+
+      voltageChart.data.labels.push(timeLabel);
+      voltageChart.data.datasets[0].data.push(volt);
+      voltageChart.update();
+    }
+
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
 
-      if (voltage === null || isNaN(voltage)) {
-        voltageValue.innerHTML = `<span class="icon">🔌</span>--.--`;
-        batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: --%`;
-        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: --`;
-        batteryStatusEl.style.color = "#666";
-        fillBar.style.height = '0%';
-        fillBar.style.backgroundColor = '#ddd';
-        fillBar.classList.remove('blink');
-        voltageHistory.length = 0;
-        lastVoltage = null;
-        return;
-      }
+      if (voltage === null || isNaN(voltage)) return;
 
       const voltNum = parseFloat(voltage);
       voltageValue.innerHTML = `<span class="icon">🔌</span>${voltNum.toFixed(2)}`;
+      updateGraph(voltNum);
 
       const percent = voltageToPercent(voltNum);
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
-
       fillBar.style.height = percent + '%';
 
-      if (voltNum < 10) {
-        fillBar.style.backgroundColor = 'red';
-        fillBar.classList.remove('blink');
-      } else if (voltNum >= 10 && voltNum <= 12) {
-        fillBar.style.backgroundColor = 'yellow';
-        fillBar.classList.remove('blink');
-      } else if (voltNum > 12 && voltNum <= 14) {
-        fillBar.style.backgroundColor = 'green';
-        fillBar.classList.remove('blink');
-      } else if (voltNum > 14) {
+      if (voltNum < 10) fillBar.style.backgroundColor = 'red';
+      else if (voltNum <= 12) fillBar.style.backgroundColor = 'yellow';
+      else if (voltNum <= 14) fillBar.style.backgroundColor = 'green';
+      else {
         fillBar.style.backgroundColor = 'green';
         fillBar.classList.add('blink');
       }
 
-      // Update history with current reading and timestamp
       const now = Date.now();
       voltageHistory.push({ time: now, voltage: voltNum });
-
-      // Remove readings older than historyIntervalMs
       while (voltageHistory.length && voltageHistory[0].time < now - historyIntervalMs) {
         voltageHistory.shift();
       }
 
       if (voltageHistory.length > 1) {
-        const oldestVoltage = voltageHistory[0].voltage;
-        const diff = voltNum - oldestVoltage;
-        const threshold = 0.02; // small tolerance
-
+        const diff = voltNum - voltageHistory[0].voltage;
+        const threshold = 0.02;
         if (Math.abs(diff) < threshold) {
           batteryStatusEl.innerHTML = `<span class="icon">⏸️</span>Status: Idle`;
           batteryStatusEl.style.color = "gray";
@@ -249,9 +292,6 @@
           batteryStatusEl.innerHTML = `<span class="icon">🔻</span>Status: Discharging`;
           batteryStatusEl.style.color = "orange";
         }
-      } else {
-        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: --`;
-        batteryStatusEl.style.color = "#666";
       }
 
       lastVoltage = voltNum;
