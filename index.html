@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Voltage Monitor with Indicators</title>
+<title>Voltage Monitor with Proper Indicators</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>
   body {
@@ -16,11 +16,9 @@
   }
   #status-bar-container {
     position: relative;
-    width: 60px; /* wider to fit indicators */
+    width: 70px; /* enough space for labels */
     height: 80vh;
     margin-right: 20px;
-    display: flex;
-    align-items: center;
   }
   #status-bar {
     width: 25px;
@@ -31,6 +29,7 @@
     overflow: hidden;
     display: flex;
     align-items: flex-end;
+    margin-left: 40px; /* leave space for indicators on left */
   }
   #fill-bar {
     width: 100%;
@@ -39,97 +38,41 @@
     background-color: green;
     transition: height 0.5s ease, background-color 0.5s ease;
   }
-  .indicator-container {
+  /* Indicators container */
+  #indicators {
     position: absolute;
+    top: 0;
     left: 0;
+    width: 40px;
     height: 100%;
-    width: 60px;
     pointer-events: none;
   }
   .indicator {
     position: absolute;
-    width: 100%;
     display: flex;
     align-items: center;
   }
   .tick {
-    width: 12px;
+    width: 15px;
     height: 2px;
     background-color: #555;
-    margin-right: 5px;
+    margin-right: 6px;
     border-radius: 1px;
   }
   .label {
     font-size: 1rem;
     color: #555;
     user-select: none;
-  }
-  /* Positions relative to 10V to 14.4V range */
-  .indicator-10 { bottom: 0%; }
-  .indicator-12 { bottom: 50%; }
-  .indicator-14 { bottom: 83%; } /* approx for 14V */
-  .indicator-14_4 { bottom: 100%; } /* max voltage label */
-
-  #container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    user-select: none;
-  }
-  #voltage-value {
-    font-size: 4.5rem;
-    font-weight: 900;
-    color: #222;
-    margin-bottom: 0;
-  }
-  #voltage-unit {
-    font-size: 1.8rem;
-    color: #555;
-    margin-top: 0;
-    letter-spacing: 1.5px;
-  }
-  #battery-percentage {
-    margin-top: 10px;
-    font-size: 2rem;
-    color: #444;
-    font-weight: 600;
-  }
-  #battery-status {
-    margin-top: 8px;
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: #666;
-  }
-  .icon {
-    margin-right: 8px;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .blink {
-    animation: blink 1s infinite;
+    white-space: nowrap;
   }
 </style>
 </head>
 <body>
 
   <div id="status-bar-container">
-    <div class="indicator-container">
-      <div class="indicator indicator-14_4">
-        <div class="tick"></div><div class="label">14.4V</div>
-      </div>
-      <div class="indicator indicator-14">
-        <div class="tick"></div><div class="label">14V</div>
-      </div>
-      <div class="indicator indicator-12">
-        <div class="tick"></div><div class="label">12V</div>
-      </div>
-      <div class="indicator indicator-10">
-        <div class="tick"></div><div class="label">10V</div>
-      </div>
+    <div id="indicators">
+      <!-- indicators dynamically placed with JS -->
     </div>
-
     <div id="status-bar">
       <div id="fill-bar"></div>
     </div>
@@ -161,12 +104,45 @@
     const fillBar = document.getElementById("fill-bar");
     const batteryPercentEl = document.getElementById("battery-percentage");
     const batteryStatusEl = document.getElementById("battery-status");
+    const indicatorsContainer = document.getElementById("indicators");
 
     let lastVoltage = null;
 
+    const minV = 10.0;
+    const maxV = 14.4;
+
+    // Helper: map voltage to CSS bottom percentage (0% at minV, 100% at maxV)
+    function voltageToBottomPercent(voltage) {
+      if (voltage < minV) return 0;
+      if (voltage > maxV) return 100;
+      return ((voltage - minV) / (maxV - minV)) * 100;
+    }
+
+    // Add indicators dynamically for these voltages:
+    const indicatorVoltages = [10, 11, 12, 13, 14, 14.4];
+    function createIndicators() {
+      indicatorsContainer.innerHTML = '';
+      indicatorVoltages.forEach(v => {
+        const ind = document.createElement('div');
+        ind.className = 'indicator';
+        ind.style.bottom = voltageToBottomPercent(v) + '%';
+
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = v + 'V';
+
+        ind.appendChild(tick);
+        ind.appendChild(label);
+        indicatorsContainer.appendChild(ind);
+      });
+    }
+
+    createIndicators();
+
     function voltageToPercent(voltage) {
-      const minV = 10.0;
-      const maxV = 14.4;
       if (voltage <= minV) return 0;
       if (voltage >= maxV) return 100;
       return Math.round(((voltage - minV) / (maxV - minV)) * 100);
