@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Voltage Monitor with Proper Indicators</title>
+<title>Voltage Monitor with Custom Indicators</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>
   body {
@@ -16,7 +16,7 @@
   }
   #status-bar-container {
     position: relative;
-    width: 70px; /* enough space for labels */
+    width: 70px;
     height: 80vh;
     margin-right: 20px;
   }
@@ -29,7 +29,7 @@
     overflow: hidden;
     display: flex;
     align-items: flex-end;
-    margin-left: 40px; /* leave space for indicators on left */
+    margin-left: 40px;
   }
   #fill-bar {
     width: 100%;
@@ -38,7 +38,6 @@
     background-color: green;
     transition: height 0.5s ease, background-color 0.5s ease;
   }
-  /* Indicators container */
   #indicators {
     position: absolute;
     top: 0;
@@ -49,6 +48,8 @@
   }
   .indicator {
     position: absolute;
+    left: 0;
+    width: 40px;
     display: flex;
     align-items: center;
   }
@@ -65,14 +66,52 @@
     user-select: none;
     white-space: nowrap;
   }
+  #container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+  #voltage-value {
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: #222;
+    margin-bottom: 0;
+  }
+  #voltage-unit {
+    font-size: 1.8rem;
+    color: #555;
+    margin-top: 0;
+    letter-spacing: 1.5px;
+  }
+  #battery-percentage {
+    margin-top: 10px;
+    font-size: 2rem;
+    color: #444;
+    font-weight: 600;
+  }
+  #battery-status {
+    margin-top: 8px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #666;
+  }
+  .icon {
+    margin-right: 8px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .blink {
+    animation: blink 1s infinite;
+  }
 </style>
 </head>
 <body>
 
   <div id="status-bar-container">
-    <div id="indicators">
-      <!-- indicators dynamically placed with JS -->
-    </div>
+    <div id="indicators"></div>
     <div id="status-bar">
       <div id="fill-bar"></div>
     </div>
@@ -111,16 +150,22 @@
     const minV = 10.0;
     const maxV = 14.4;
 
-    // Helper: map voltage to CSS bottom percentage (0% at minV, 100% at maxV)
+    function voltageToPercent(voltage) {
+      if (voltage <= minV) return 0;
+      if (voltage >= maxV) return 100;
+      return Math.round(((voltage - minV) / (maxV - minV)) * 100);
+    }
+
+    // Map voltage to bottom % of the indicator container (0% at minV, 100% at maxV)
     function voltageToBottomPercent(voltage) {
       if (voltage < minV) return 0;
       if (voltage > maxV) return 100;
       return ((voltage - minV) / (maxV - minV)) * 100;
     }
 
-    // Add indicators dynamically for these voltages:
-    const indicatorVoltages = [10, 11, 12, 13, 14, 14.4];
+    // Create the indicators dynamically
     function createIndicators() {
+      const indicatorVoltages = [10, 11, 12, 13, 14, 14.4];
       indicatorsContainer.innerHTML = '';
       indicatorVoltages.forEach(v => {
         const ind = document.createElement('div');
@@ -132,7 +177,7 @@
 
         const label = document.createElement('div');
         label.className = 'label';
-        label.textContent = v + 'V';
+        label.textContent = v === 14.4 ? '14.4V' : v.toString();
 
         ind.appendChild(tick);
         ind.appendChild(label);
@@ -141,12 +186,6 @@
     }
 
     createIndicators();
-
-    function voltageToPercent(voltage) {
-      if (voltage <= minV) return 0;
-      if (voltage >= maxV) return 100;
-      return Math.round(((voltage - minV) / (maxV - minV)) * 100);
-    }
 
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
