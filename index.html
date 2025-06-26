@@ -10,7 +10,6 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f0f2f5;
       display: flex;
-      height: 100vh;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
@@ -139,11 +138,13 @@
 
   <canvas id="voltageGraph" width="400" height="200"></canvas>
 
-  <!-- Firebase v8 SDK -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <!-- Chart.js CDN -->
+
+  <!-- Chart.js + Zoom Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -161,10 +162,6 @@
     const batteryPercentEl = document.getElementById("battery-percentage");
     const batteryStatusEl = document.getElementById("battery-status");
     const indicatorsContainer = document.getElementById("indicators");
-
-    let lastVoltage = null;
-    const voltageHistory = [];
-    const historyIntervalMs = 5000;
 
     const minV = 10.0;
     const maxV = 14.4;
@@ -204,21 +201,32 @@
 
     createIndicators();
 
-    // Chart setup
     const ctx = document.getElementById('voltageGraph').getContext('2d');
     const voltageChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{
-          label: 'Voltage (V)',
-          data: [],
-          backgroundColor: 'rgba(0, 128, 255, 0.1)',
-          borderColor: 'rgba(0, 128, 255, 1)',
-          borderWidth: 2,
-          tension: 0.2,
-          pointRadius: 0
-        }]
+        datasets: [
+          {
+            label: 'Voltage (V)',
+            data: [],
+            backgroundColor: 'rgba(0, 128, 255, 0.1)',
+            borderColor: 'rgba(0, 128, 255, 1)',
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0
+          },
+          {
+            label: 'Avg (trend)',
+            data: [],
+            backgroundColor: 'rgba(0,0,0,0)',
+            borderColor: 'rgba(255,0,0,0.7)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            tension: 0.3,
+            pointRadius: 0
+          }
+        ]
       },
       options: {
         scales: {
@@ -232,25 +240,36 @@
           }
         },
         plugins: {
-          legend: { display: false }
+          legend: { display: true },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: 'ctrl'
+            },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x'
+            }
+          }
         },
         animation: false
       }
     });
 
-    function updateGraph(volt) {
-      const now = new Date();
-      const timeLabel = now.toLocaleTimeString().split(" ")[0];
-
-      if (voltageChart.data.labels.length > 60) {
-        voltageChart.data.labels.shift();
-        voltageChart.data.datasets[0].data.shift();
+    function movingAverage(arr, windowSize) {
+      const result = [];
+      for (let i = 0; i < arr.length; i++) {
+        const start = Math.max(0, i - windowSize + 1);
+        const subset = arr.slice(start, i + 1);
+        const sum = subset.reduce((a, b) => a + b, 0);
+        result.push(sum / subset.length);
       }
-
-      voltageChart.data.labels.push(timeLabel);
-      voltageChart.data.datasets[0].data.push(volt);
-      voltageChart.update();
+      return result;
     }
+
+    let voltageHistory = [];
 
     voltageRef.on("value", (snapshot) => {
       const voltage = snapshot.val();
@@ -259,8 +278,8 @@
 
       const voltNum = parseFloat(voltage);
       voltageValue.innerHTML = `<span class="icon">🔌</span>${voltNum.toFixed(2)}`;
-      updateGraph(voltNum);
 
+      // Update % bar
       const percent = voltageToPercent(voltNum);
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
       fillBar.style.height = percent + '%';
@@ -273,28 +292,25 @@
         fillBar.classList.add('blink');
       }
 
-      const now = Date.now();
-      voltageHistory.push({ time: now, voltage: voltNum });
-      while (voltageHistory.length && voltageHistory[0].time < now - historyIntervalMs) {
-        voltageHistory.shift();
+      // Graph logic
+      const now = new Date();
+      const label = now.toLocaleTimeString().split(" ")[0];
+      const chart = voltageChart;
+
+      if (chart.data.labels.length > 120) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+        chart.data.datasets[1].data.shift();
       }
 
-      if (voltageHistory.length > 1) {
-        const diff = voltNum - voltageHistory[0].voltage;
-        const threshold = 0.02;
-        if (Math.abs(diff) < threshold) {
-          batteryStatusEl.innerHTML = `<span class="icon">⏸️</span>Status: Idle`;
-          batteryStatusEl.style.color = "gray";
-        } else if (diff > 0) {
-          batteryStatusEl.innerHTML = `<span class="icon">⚡</span>Status: Charging`;
-          batteryStatusEl.style.color = "blue";
-        } else {
-          batteryStatusEl.innerHTML = `<span class="icon">🔻</span>Status: Discharging`;
-          batteryStatusEl.style.color = "orange";
-        }
-      }
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(voltNum);
 
-      lastVoltage = voltNum;
+      const raw = chart.data.datasets[0].data;
+      const avg = movingAverage(raw, 5);
+      chart.data.datasets[1].data = avg;
+
+      chart.update();
     });
   </script>
 
