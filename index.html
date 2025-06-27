@@ -9,15 +9,23 @@
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f0f2f5;
+      color: #222;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       padding-top: 20px;
-      height: auto;
       min-height: 100vh;
       overflow-y: auto;
+      transition: background-color 0.5s ease, color 0.5s ease;
     }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      background-color: #121212;
+      color: #ddd;
+    }
+
     #main-content {
       display: flex;
       flex-direction: row;
@@ -40,6 +48,10 @@
       display: flex;
       align-items: flex-end;
       margin-left: 40px;
+      transition: background-color 0.5s ease;
+    }
+    body.dark-mode #status-bar {
+      background-color: #333;
     }
     #fill-bar {
       width: 100%;
@@ -62,6 +74,10 @@
       width: 40px;
       display: flex;
       align-items: center;
+      transition: color 0.5s ease;
+    }
+    body.dark-mode .indicator .label {
+      color: #ccc;
     }
     .tick {
       width: 15px;
@@ -69,42 +85,60 @@
       background-color: #555;
       margin-right: 6px;
       border-radius: 1px;
+      transition: background-color 0.5s ease;
+    }
+    body.dark-mode .tick {
+      background-color: #aaa;
     }
     .label {
       font-size: 1rem;
       color: #555;
       user-select: none;
       white-space: nowrap;
+      transition: color 0.5s ease;
     }
     #container {
       display: flex;
       flex-direction: column;
       align-items: center;
       user-select: none;
+      transition: color 0.5s ease;
     }
     #voltage-value {
       font-size: 4.5rem;
       font-weight: 900;
-      color: #222;
       margin-bottom: 0;
+      transition: color 0.5s ease;
     }
     #voltage-unit {
       font-size: 1.8rem;
       color: #555;
       margin-top: 0;
       letter-spacing: 1.5px;
+      transition: color 0.5s ease;
+    }
+    body.dark-mode #voltage-unit {
+      color: #bbb;
     }
     #battery-percentage {
       margin-top: 10px;
       font-size: 2rem;
-      color: #444;
       font-weight: 600;
+      color: #444;
+      transition: color 0.5s ease;
+    }
+    body.dark-mode #battery-percentage {
+      color: #ccc;
     }
     #battery-status {
       margin-top: 8px;
       font-size: 1.6rem;
       font-weight: 600;
       color: #666;
+      transition: color 0.5s ease;
+    }
+    body.dark-mode #battery-status {
+      color: #aaa;
     }
     .icon {
       margin-right: 8px;
@@ -112,7 +146,12 @@
     canvas {
       max-width: 95vw;
       touch-action: none; /* Enable mobile gestures */
+      transition: filter 0.5s ease;
     }
+    body.dark-mode canvas {
+      filter: invert(1) hue-rotate(180deg);
+    }
+
     #solar-section {
       margin-top: 30px;
       background: #000;
@@ -126,11 +165,18 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+    body.dark-mode #solar-section {
+      background: #222;
+      color: #ddd;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
     }
     #solar-voltage {
       font-size: 2.5rem;
       font-weight: 700;
       margin-bottom: 10px;
+      transition: color 0.5s ease;
     }
     #solar-bar-container {
       width: 100%;
@@ -139,6 +185,10 @@
       height: 25px;
       overflow: hidden;
       position: relative;
+      transition: background-color 0.5s ease;
+    }
+    body.dark-mode #solar-bar-container {
+      background: #444;
     }
     #solar-fill {
       height: 100%;
@@ -151,10 +201,12 @@
       margin-top: 8px;
       font-weight: 600;
       font-size: 1.2rem;
+      transition: color 0.5s ease;
     }
     #solar-icon {
       font-size: 2.2rem;
       margin-top: 6px;
+      transition: color 0.5s ease;
     }
     @keyframes blink {
       0%, 100% { opacity: 1; }
@@ -226,6 +278,8 @@
     const solarFill = document.getElementById('solar-fill');
     const solarPercentEl = document.getElementById('solar-percentage');
     const solarIcon = document.getElementById('solar-icon');
+
+    const body = document.body;
 
     let voltageHistory = [];
     const maxHistory = 10;
@@ -355,8 +409,14 @@
 
       solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
 
-      // Moon back to light crescent
-      solarIcon.textContent = val < 12 ? '🌙' : '☀️';
+      // Dark mode toggle based on solar voltage
+      if (val < 12) {
+        body.classList.add('dark-mode');
+        solarIcon.textContent = '🌙';  // Light crescent moon
+      } else {
+        body.classList.remove('dark-mode');
+        solarIcon.textContent = '☀️';
+      }
     });
   </script>
 
