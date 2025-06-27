@@ -333,7 +333,9 @@
       }
 
       // Solar section
-      solarVEl.innerHTML = `${volt} V <span id="solar-icon">${volt >= 10 ? '☀️' : '🌑'}</span>`;
+      
+      solarVEl.innerHTML = `${volt} V <span id="solar-icon">${volt > 12 ? '☀️' : '🌑'}</span>`;//<12
+      
       solarFill.style.width = percent + '%';
       solarFill.style.backgroundColor = volt < 10 ? 'red' : volt <= 12 ? 'yellow' : 'green';
 
