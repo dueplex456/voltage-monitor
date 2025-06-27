@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Voltage Monitor</title>
+  <title>Voltage Monitor with Graph</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
   <style>
     body {
@@ -12,58 +12,57 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 10px;
-      overflow-x: hidden;
+      justify-content: flex-start;
+      padding-top: 20px;
+      height: auto;
+      min-height: 100vh;
+      overflow-y: auto;
     }
-
     #main-content {
       display: flex;
       flex-direction: row;
       align-items: center;
       margin-bottom: 30px;
     }
-
     #status-bar-container {
       position: relative;
       width: 70px;
       height: 80vh;
       margin-right: 20px;
     }
-
     #status-bar {
       width: 25px;
       height: 100%;
       border-radius: 12px;
       background-color: #ddd;
+      position: relative;
       overflow: hidden;
-      margin-left: 40px;
       display: flex;
       align-items: flex-end;
+      margin-left: 40px;
     }
-
     #fill-bar {
       width: 100%;
       height: 0;
+      border-radius: 12px 12px 0 0;
       background-color: green;
       transition: height 0.5s ease, background-color 0.5s ease;
-      border-radius: 12px 12px 0 0;
     }
-
     #indicators {
       position: absolute;
-      left: 0;
       top: 0;
+      left: 0;
       width: 40px;
       height: 100%;
+      pointer-events: none;
     }
-
     .indicator {
       position: absolute;
+      left: 0;
+      width: 40px;
       display: flex;
       align-items: center;
-      width: 40px;
     }
-
     .tick {
       width: 15px;
       height: 2px;
@@ -71,89 +70,98 @@
       margin-right: 6px;
       border-radius: 1px;
     }
-
     .label {
       font-size: 1rem;
       color: #555;
       user-select: none;
+      white-space: nowrap;
     }
-
     #container {
       display: flex;
       flex-direction: column;
       align-items: center;
+      user-select: none;
     }
-
     #voltage-value {
       font-size: 4.5rem;
       font-weight: 900;
       color: #222;
-      margin: 0;
+      margin-bottom: 0;
     }
-
     #voltage-unit {
       font-size: 1.8rem;
       color: #555;
-      margin-top: 5px;
+      margin-top: 0;
+      letter-spacing: 1.5px;
     }
-
-    #battery-percentage, #battery-status {
-      font-size: 1.6rem;
-      margin-top: 5px;
+    #battery-percentage {
+      margin-top: 10px;
+      font-size: 2rem;
       color: #444;
+      font-weight: 600;
     }
-
+    #battery-status {
+      margin-top: 8px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #666;
+    }
+    .icon {
+      margin-right: 8px;
+    }
     canvas {
       max-width: 95vw;
-      margin-top: 20px;
+      touch-action: none; /* Enable mobile gestures */
     }
-
-    .icon {
-      margin-right: 6px;
+    #solar-section {
+      margin-top: 30px;
+      background: #000;
+      padding: 15px 20px;
+      border-radius: 15px;
+      width: 95vw;
+      max-width: 500px;
+      color: #fff;
+      user-select: none;
+      box-shadow: 0 0 12px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
-    .blink {
-      animation: blink 1s infinite;
+    #solar-voltage {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
     }
-
+    #solar-bar-container {
+      width: 100%;
+      background: #222;
+      border-radius: 12px;
+      height: 25px;
+      overflow: hidden;
+      position: relative;
+    }
+    #solar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 12px 0 0 12px;
+      background-color: green;
+      transition: width 0.5s ease, background-color 0.5s ease;
+    }
+    #solar-percentage {
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+    #solar-icon {
+      font-size: 2.2rem;
+      margin-top: 6px;
+    }
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
-
-    #solar-section {
-      width: 100%;
-      max-width: 600px;
-      margin-top: 30px;
-    }
-
-    #solar-bar-wrapper {
-      width: 100%;
-      background-color: #ddd;
-      height: 25px;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    #solar-fill {
-      height: 100%;
-      width: 0;
-      background-color: green;
-      transition: width 0.5s ease, background-color 0.5s ease;
-    }
-
-    #solar-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #444;
-    }
-
-    #solar-icon {
-      font-size: 1.6rem;
+    .blink {
+      animation: blink 1s infinite;
     }
   </style>
 </head>
@@ -168,7 +176,7 @@
     </div>
 
     <div id="container">
-      <h1 id="voltage-value"><span class="icon">🔌</span><span class="value">--.--</span></h1>
+      <h1 id="voltage-value"><span class="icon">🔌</span>--.--</h1>
       <h3 id="voltage-unit">Volts</h3>
       <div id="battery-percentage"><span class="icon">🔋</span>Battery: --%</div>
       <div id="battery-status"><span class="icon">🔄</span>Status: --</div>
@@ -177,22 +185,21 @@
 
   <canvas id="voltageGraph" width="400" height="200"></canvas>
 
+  <!-- Solar voltage section -->
   <div id="solar-section">
-    <div id="solar-bar-wrapper">
+    <div id="solar-voltage">Solar: -- V</div>
+    <div id="solar-bar-container">
       <div id="solar-fill"></div>
     </div>
-    <div id="solar-info">
-      <div id="solar-voltage">Solar: -- V</div>
-      <div id="solar-percentage">--%</div>
-      <div id="solar-icon">🌙</div>
-    </div>
+    <div id="solar-percentage">--%</div>
+    <div id="solar-icon">🌙</div>
   </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Chart.js -->
+  <!-- Chart.js + Zoom Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
@@ -209,18 +216,19 @@
 
     const minV = 10.0, maxV = 14.4;
 
-    const voltageValue = document.querySelector('#voltage-value .value');
+    const voltageValue = document.getElementById('voltage-value');
     const fillBar = document.getElementById('fill-bar');
     const batteryPercentEl = document.getElementById('battery-percentage');
     const batteryStatusEl = document.getElementById('battery-status');
     const indicatorsContainer = document.getElementById('indicators');
 
-    const solarFill = document.getElementById('solar-fill');
     const solarVoltEl = document.getElementById('solar-voltage');
+    const solarFill = document.getElementById('solar-fill');
     const solarPercentEl = document.getElementById('solar-percentage');
     const solarIcon = document.getElementById('solar-icon');
 
-    let lastVoltage = null;
+    let voltageHistory = [];
+    const maxHistory = 10;
 
     function voltageToPercent(v) {
       if (v <= minV) return 0;
@@ -291,20 +299,35 @@
       }
     });
 
+    function average(arr) {
+      if (arr.length === 0) return 0;
+      const sum = arr.reduce((a,b) => a+b, 0);
+      return sum / arr.length;
+    }
+
     voltageRef.on("value", snap => {
       const val = parseFloat(snap.val());
       if (isNaN(val)) return;
 
-      animateNumber(voltageValue, val, 2);
+      voltageHistory.push(val);
+      if (voltageHistory.length > maxHistory) voltageHistory.shift();
+
+      const avgVoltage = average(voltageHistory);
+
+      voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
+
       const percent = voltageToPercent(val);
       fillBar.style.height = percent + '%';
 
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
 
-      if (lastVoltage !== null) {
-        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${val > lastVoltage ? "Charging" : "Discharging"}`;
+      // Charging status logic (avg voltage trend)
+      if (voltageHistory.length >= 2) {
+        const lastAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
+        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > lastAvg ? "Charging" : "Discharging"}`;
+      } else {
+        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: --`;
       }
-      lastVoltage = val;
 
       if (val < 10) fillBar.style.backgroundColor = 'red';
       else if (val <= 12) fillBar.style.backgroundColor = 'yellow';
@@ -314,7 +337,7 @@
         fillBar.classList.add('blink');
       }
 
-      // Chart update
+      // Update chart
       const now = new Date();
       const timeLabel = now.toLocaleTimeString().split(" ")[0];
       if (voltageChart.data.labels.length > 120) {
@@ -325,30 +348,16 @@
       voltageChart.data.datasets[0].data.push(val);
       voltageChart.update();
 
-      // Solar section
+      // Solar section update (same pin 4)
       solarVoltEl.textContent = `Solar: ${val.toFixed(2)} V`;
       solarPercentEl.textContent = `${percent}%`;
       solarFill.style.width = percent + '%';
 
       solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+      // Moon back to light crescent
       solarIcon.textContent = val < 12 ? '🌙' : '☀️';
     });
-
-    function animateNumber(el, newVal, decimals = 2) {
-      const old = parseFloat(el.textContent) || 0;
-      const steps = 15;
-      const step = (newVal - old) / steps;
-      let i = 0;
-      const anim = setInterval(() => {
-        if (i >= steps) {
-          el.textContent = newVal.toFixed(decimals);
-          clearInterval(anim);
-        } else {
-          el.textContent = (old + step * i).toFixed(decimals);
-          i++;
-        }
-      }, 30);
-    }
   </script>
 
 </body>
