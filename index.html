@@ -1,3 +1,4 @@
+<!-- Just paste this into your HTML file -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,6 @@
   <title>Voltage Monitor with Graph</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
   <style>
-    /* All previous styles remain unchanged */
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,12 +24,185 @@
       background-color: #121212;
       color: #ddd;
     }
-    /* ... (rest of your CSS remains the same, unchanged) ... */
+    #main-content {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    #status-bar-container {
+      position: relative;
+      width: 70px;
+      height: 80vh;
+      margin-right: 20px;
+    }
+    #status-bar {
+      width: 25px;
+      height: 100%;
+      border-radius: 12px;
+      background-color: #ddd;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      margin-left: 40px;
+      transition: background-color 0.5s ease;
+    }
+    body.dark-mode #status-bar {
+      background-color: #333;
+    }
+    #fill-bar {
+      width: 100%;
+      height: 0;
+      border-radius: 12px 12px 0 0;
+      background-color: green;
+      transition: height 0.5s ease, background-color 0.5s ease;
+    }
+    #indicators {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 100%;
+      pointer-events: none;
+    }
+    .indicator {
+      position: absolute;
+      left: 0;
+      width: 40px;
+      display: flex;
+      align-items: center;
+      transition: color 0.5s ease;
+    }
+    body.dark-mode .indicator .label {
+      color: #ccc;
+    }
+    .tick {
+      width: 15px;
+      height: 2px;
+      background-color: #555;
+      margin-right: 6px;
+      border-radius: 1px;
+      transition: background-color 0.5s ease;
+    }
+    body.dark-mode .tick {
+      background-color: #aaa;
+    }
+    .label {
+      font-size: 1rem;
+      color: #555;
+      user-select: none;
+      white-space: nowrap;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    #voltage-value {
+      font-size: 4.5rem;
+      font-weight: 900;
+      margin-bottom: 0;
+    }
+    #voltage-unit {
+      font-size: 1.8rem;
+      color: #555;
+      margin-top: 0;
+      letter-spacing: 1.5px;
+    }
+    body.dark-mode #voltage-unit {
+      color: #bbb;
+    }
+    #battery-percentage {
+      margin-top: 10px;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #444;
+    }
+    body.dark-mode #battery-percentage {
+      color: #ccc;
+    }
+    #battery-status {
+      margin-top: 8px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #666;
+    }
+    body.dark-mode #battery-status {
+      color: #aaa;
+    }
+    .icon {
+      margin-right: 8px;
+    }
+    canvas {
+      max-width: 95vw;
+      touch-action: none;
+    }
+    body.dark-mode canvas {
+      filter: invert(1) hue-rotate(180deg);
+    }
+
+    #solar-section {
+      margin-top: 30px;
+      background: #000;
+      padding: 15px 20px;
+      border-radius: 15px;
+      width: 95vw;
+      max-width: 500px;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    body.dark-mode #solar-section {
+      background: #222;
+      color: #ddd;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+    #solar-voltage {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    #solar-bar-container {
+      width: 100%;
+      background: #222;
+      border-radius: 12px;
+      height: 25px;
+      overflow: hidden;
+    }
+    body.dark-mode #solar-bar-container {
+      background: #444;
+    }
+    #solar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 12px 0 0 12px;
+      background-color: green;
+      transition: width 0.5s ease, background-color 0.5s ease;
+    }
+    #solar-percentage {
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+    #solar-icon {
+      font-size: 2.2rem;
+      margin-top: 6px;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .blink {
+      animation: blink 1s infinite;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Voltage UI and Graph Section (unchanged) -->
   <div id="main-content">
     <div id="status-bar-container">
       <div id="indicators"></div>
@@ -48,7 +221,6 @@
 
   <canvas id="voltageGraph" width="400" height="200"></canvas>
 
-  <!-- Solar Voltage UI -->
   <div id="solar-section">
     <div id="solar-voltage">Solar: -- V</div>
     <div id="solar-bar-container">
@@ -58,11 +230,9 @@
     <div id="solar-icon">🌙</div>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Chart.js & Zoom -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
@@ -76,7 +246,7 @@
     firebase.initializeApp(config);
 
     const voltageRef = firebase.database().ref("voltage");
-    const solarRef = firebase.database().ref("solar");
+    const solarRef = firebase.database().ref("solar"); // ✅ Using ADC pin 5
 
     const minV = 10.0, maxV = 14.4;
 
@@ -115,14 +285,11 @@
         const ind = document.createElement('div');
         ind.className = 'indicator';
         ind.style.bottom = voltageToBarHeight(v) + '%';
-
         const tick = document.createElement('div');
         tick.className = 'tick';
-
         const label = document.createElement('div');
         label.className = 'label';
         label.textContent = v === 14.4 ? '14.4V' : v;
-
         ind.appendChild(tick);
         ind.appendChild(label);
         indicatorsContainer.appendChild(ind);
@@ -149,8 +316,8 @@
       options: {
         animation: false,
         scales: {
-          y: { min: 9, max: 15, ticks: { color: '#444' }},
-          x: { ticks: { display: false }}
+          y: { min: 9, max: 15, ticks: { color: '#444' } },
+          x: { ticks: { display: false } }
         },
         plugins: {
           zoom: {
@@ -163,8 +330,7 @@
 
     function average(arr) {
       if (arr.length === 0) return 0;
-      const sum = arr.reduce((a, b) => a + b, 0);
-      return sum / arr.length;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
     }
 
     voltageRef.on("value", snap => {
@@ -175,21 +341,18 @@
       if (voltageHistory.length > 10) voltageHistory.shift();
 
       const avgVoltage = average(voltageHistory);
-      const lastAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
-
       voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
+
       const percent = voltageToPercent(val);
       fillBar.style.height = percent + '%';
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
-      batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > lastAvg ? "Charging" : "Discharging"}`;
 
-      if (val < 10) fillBar.style.backgroundColor = 'red';
-      else if (val <= 12) fillBar.style.backgroundColor = 'yellow';
-      else if (val <= 14) fillBar.style.backgroundColor = 'green';
-      else {
-        fillBar.style.backgroundColor = 'green';
-        fillBar.classList.add('blink');
+      if (voltageHistory.length > 1) {
+        const prevAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
+        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > prevAvg ? "Charging" : "Discharging"}`;
       }
+
+      fillBar.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
 
       const now = new Date();
       const label = now.toLocaleTimeString().split(" ")[0];
@@ -202,7 +365,7 @@
       voltageChart.update();
     });
 
-    // 🔆 Solar voltage logic
+    // ✅ Solar logic
     solarRef.on("value", snap => {
       const val = parseFloat(snap.val());
       if (isNaN(val)) return;
@@ -222,5 +385,6 @@
       }
     });
   </script>
+
 </body>
 </html>
