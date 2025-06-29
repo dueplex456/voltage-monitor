@@ -230,10 +230,12 @@
     <div id="solar-icon">🌙</div>
   </div>
 
-<div id="wifi-info" style="margin-top: 20px; font-size: 1.3rem;">
-  <strong>WiFi:</strong> <span id="wifi-name">--</span>  
-  <span id="wifi-strength">-- dBm</span>
+<div id="wifi-info" style="margin-top: 20px; font-size: 1.5rem; user-select: none;">
+  <span id="wifi-name">Wi-Fi: --</span>
+  <span id="wifi-bars" style="margin-left: 10px; color: #2c7;"></span>
+  <span id="wifi-quality" style="margin-left: 10px; font-weight: 600;"></span>
 </div>
+
 
 
   <!-- Firebase SDK -->
@@ -353,6 +355,50 @@ wifiRSSIRef.on("value", snap => {
     wifiStrengthEl.textContent = rssi + " dBm";
   } else {
     wifiStrengthEl.textContent = "-- dBm";
+  }
+});
+
+
+  const wifiNameEl = document.getElementById('wifi-name');
+const wifiBarsEl = document.getElementById('wifi-bars');
+const wifiQualityEl = document.getElementById('wifi-quality');
+
+function rssiToBars(rssi) {
+  if (rssi >= -50) return 4;
+  else if (rssi >= -60) return 3;
+  else if (rssi >= -70) return 2;
+  else if (rssi >= -80) return 1;
+  else return 0;
+}
+
+function rssiToQuality(rssi) {
+  if (rssi >= -50) return "Excellent";
+  else if (rssi >= -60) return "Good";
+  else if (rssi >= -70) return "Fair";
+  else if (rssi >= -80) return "Weak";
+  else return "No Signal";
+}
+
+// Reference for WiFi info in Firebase (make sure your ESP32 writes to this path)
+const wifiRef = firebase.database().ref("wifiInfo");
+
+wifiRef.on("value", snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  const ssid = data.ssid || "--";
+  const rssi = data.rssi !== undefined ? parseInt(data.rssi) : null;
+
+  wifiNameEl.textContent = `Wi-Fi: ${ssid}`;
+
+  if (rssi !== null) {
+    const bars = rssiToBars(rssi);
+    const quality = rssiToQuality(rssi);
+    wifiBarsEl.textContent = "📶".repeat(bars);
+    wifiQualityEl.textContent = quality;
+  } else {
+    wifiBarsEl.textContent = "";
+    wifiQualityEl.textContent = "";
   }
 });
 
