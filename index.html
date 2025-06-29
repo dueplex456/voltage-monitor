@@ -235,157 +235,155 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
-  <!-- Paste into your HTML file -->
-<script>
-  const config = {
-    apiKey: "AIzaSyD-b0U1cERqOW05HPE7UNVEv6emCoMopDM",
-    authDomain: "esponline-e1344.firebaseapp.com",
-    databaseURL: "https://esponline-e1344-default-rtdb.firebaseio.com",
-    projectId: "esponline-e1344"
-  };
-  firebase.initializeApp(config);
+  <script>
+    const config = {
+      apiKey: "AIzaSyD-b0U1cERqOW05HPE7UNVEv6emCoMopDM",
+      authDomain: "esponline-e1344.firebaseapp.com",
+      databaseURL: "https://esponline-e1344-default-rtdb.firebaseio.com",
+      projectId: "esponline-e1344"
+    };
+    firebase.initializeApp(config);
 
-  const voltageRef = firebase.database().ref("voltage");
-  const solarRef = firebase.database().ref("solar");
+    const voltageRef = firebase.database().ref("voltage");
+    const solarRef = firebase.database().ref("solar");
 
-  const batteryMin = 18.0, batteryMax = 30.0;
-  const solarMin = 0.0, solarMax = 100.0;
+    const batteryMin = 18.0, batteryMax = 30.0;
+    const solarMin = 0.0, solarMax = 100.0;
 
-  const voltageValue = document.getElementById('voltage-value');
-  const fillBar = document.getElementById('fill-bar');
-  const batteryPercentEl = document.getElementById('battery-percentage');
-  const batteryStatusEl = document.getElementById('battery-status');
-  const indicatorsContainer = document.getElementById('indicators');
+    const voltageValue = document.getElementById('voltage-value');
+    const fillBar = document.getElementById('fill-bar');
+    const batteryPercentEl = document.getElementById('battery-percentage');
+    const batteryStatusEl = document.getElementById('battery-status');
+    const indicatorsContainer = document.getElementById('indicators');
 
-  const solarVoltEl = document.getElementById('solar-voltage');
-  const solarFill = document.getElementById('solar-fill');
-  const solarPercentEl = document.getElementById('solar-percentage');
-  const solarIcon = document.getElementById('solar-icon');
+    const solarVoltEl = document.getElementById('solar-voltage');
+    const solarFill = document.getElementById('solar-fill');
+    const solarPercentEl = document.getElementById('solar-percentage');
+    const solarIcon = document.getElementById('solar-icon');
 
-  const body = document.body;
+    const body = document.body;
 
-  let voltageHistory = [];
-  const maxHistory = 10;
+    let voltageHistory = [];
+    const maxHistory = 10;
 
-  function batteryVoltageToPercent(v) {
-    if (v <= batteryMin) return 0;
-    if (v >= batteryMax) return 100;
-    return Math.round(((v - batteryMin) / (batteryMax - batteryMin)) * 100);
-  }
+    function batteryVoltageToPercent(v) {
+      if (v <= batteryMin) return 0;
+      if (v >= batteryMax) return 100;
+      return Math.round(((v - batteryMin) / (batteryMax - batteryMin)) * 100);
+    }
 
-  function batteryVoltageToBarHeight(v) {
-    if (v < batteryMin) return 0;
-    if (v > batteryMax) return 100;
-    return ((v - batteryMin) / (batteryMax - batteryMin)) * 100;
-  }
+    function batteryVoltageToBarHeight(v) {
+      if (v < batteryMin) return 0;
+      if (v > batteryMax) return 100;
+      return ((v - batteryMin) / (batteryMax - batteryMin)) * 100;
+    }
 
-  function createIndicators() {
-    const points = [18, 20, 22, 24, 26, 28, 30];
-    indicatorsContainer.innerHTML = '';
-    points.forEach(v => {
-      const ind = document.createElement('div');
-      ind.className = 'indicator';
-      ind.style.bottom = batteryVoltageToBarHeight(v) + '%';
-      const tick = document.createElement('div');
-      tick.className = 'tick';
-      const label = document.createElement('div');
-      label.className = 'label';
-      label.textContent = v + 'V';
-      ind.appendChild(tick);
-      ind.appendChild(label);
-      indicatorsContainer.appendChild(ind);
-    });
-  }
+    function createIndicators() {
+      const points = [18, 20, 22, 24, 26, 28, 30];
+      indicatorsContainer.innerHTML = '';
+      points.forEach(v => {
+        const ind = document.createElement('div');
+        ind.className = 'indicator';
+        ind.style.bottom = batteryVoltageToBarHeight(v) + '%';
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = v + 'V';
+        ind.appendChild(tick);
+        ind.appendChild(label);
+        indicatorsContainer.appendChild(ind);
+      });
+    }
 
-  createIndicators();
+    createIndicators();
 
-  const ctx = document.getElementById('voltageGraph').getContext('2d');
-  const voltageChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Voltage (V)',
-        data: [],
-        backgroundColor: 'rgba(0,128,255,0.1)',
-        borderColor: 'rgba(0,128,255,1)',
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      animation: false,
-      scales: {
-        y: { min: 17, max: 31, ticks: { color: '#444' } },
-        x: { ticks: { display: false } }
+    const ctx = document.getElementById('voltageGraph').getContext('2d');
+    const voltageChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Voltage (V)',
+          data: [],
+          backgroundColor: 'rgba(0,128,255,0.1)',
+          borderColor: 'rgba(0,128,255,1)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        }]
       },
-      plugins: {
-        zoom: {
-          pan: { enabled: true, mode: 'x' },
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+      options: {
+        animation: false,
+        scales: {
+          y: { min: 17, max: 31, ticks: { color: '#444' } },
+          x: { ticks: { display: false } }
+        },
+        plugins: {
+          zoom: {
+            pan: { enabled: true, mode: 'x' },
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+          }
         }
       }
-    }
-  });
+    });
 
-  function average(arr) {
-    if (arr.length === 0) return 0;
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-  }
-
-  voltageRef.on("value", snap => {
-    const val = parseFloat(snap.val());
-    if (isNaN(val)) return;
-
-    voltageHistory.push(val);
-    if (voltageHistory.length > 10) voltageHistory.shift();
-
-    const avgVoltage = average(voltageHistory);
-    voltageValue.innerHTML = <span class="icon">🔌</span>${val.toFixed(2)};
-
-    const percent = batteryVoltageToPercent(val);
-    fillBar.style.height = percent + '%';
-    batteryPercentEl.innerHTML = <span class="icon">🔋</span>Battery: ${percent}%;
-
-    if (voltageHistory.length > 1) {
-      const prevAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
-      batteryStatusEl.innerHTML = <span class="icon">🔄</span>Status: ${avgVoltage > prevAvg ? "Charging" : "Discharging"};
+    function average(arr) {
+      if (arr.length === 0) return 0;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
     }
 
-    fillBar.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+    voltageRef.on("value", snap => {
+      const val = parseFloat(snap.val());
+      if (isNaN(val)) return;
 
-    const now = new Date();
-    const label = now.toLocaleTimeString().split(" ")[0];
-    if (voltageChart.data.labels.length > 120) {
-      voltageChart.data.labels.shift();
-      voltageChart.data.datasets[0].data.shift();
-    }
-    voltageChart.data.labels.push(label);
-    voltageChart.data.datasets[0].data.push(val);
-    voltageChart.update();
-  });
+      voltageHistory.push(val);
+      if (voltageHistory.length > maxHistory) voltageHistory.shift();
 
-  solarRef.on("value", snap => {
-    const val = parseFloat(snap.val());
-    if (isNaN(val)) return;
+      const avgVoltage = average(voltageHistory);
+      voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
 
-    const percent = Math.round((val - solarMin) / (solarMax - solarMin) * 100);
-    solarVoltEl.textContent = Solar: ${val.toFixed(2)} V;
-    solarPercentEl.textContent = ${percent}%;
-    solarFill.style.width = percent + '%';
-    solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+      const percent = batteryVoltageToPercent(val);
+      fillBar.style.height = percent + '%';
+      batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
 
-    if (val < 12) {
-      body.classList.add('dark-mode');
-      solarIcon.textContent = '🌙';
-    } else {
-      body.classList.remove('dark-mode');
-      solarIcon.textContent = '☀️';
-    }
-  });
-</script>
+      if (voltageHistory.length > 1) {
+        const prevAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
+        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > prevAvg ? "Charging" : "Discharging"}`;
+      }
 
+      fillBar.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+      const now = new Date();
+      const label = now.toLocaleTimeString().split(" ")[0];
+      if (voltageChart.data.labels.length > 120) {
+        voltageChart.data.labels.shift();
+        voltageChart.data.datasets[0].data.shift();
+      }
+      voltageChart.data.labels.push(label);
+      voltageChart.data.datasets[0].data.push(val);
+      voltageChart.update();
+    });
+
+    solarRef.on("value", snap => {
+      const val = parseFloat(snap.val());
+      if (isNaN(val)) return;
+
+      const percent = Math.round((val - solarMin) / (solarMax - solarMin) * 100);
+      solarVoltEl.textContent = `Solar: ${val.toFixed(2)} V`;
+      solarPercentEl.textContent = `${percent}%`;
+      solarFill.style.width = percent + '%';
+      solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+      if (val < 12) {
+        body.classList.add('dark-mode');
+        solarIcon.textContent = '🌙';
+      } else {
+        body.classList.remove('dark-mode');
+        solarIcon.textContent = '☀️';
+      }
+    });
+  </script>
 
 </body>
 </html>
