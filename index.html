@@ -1,453 +1,84 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Voltage Monitor with Graph</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0f2f5;
-      color: #222;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding-top: 20px;
-      min-height: 100vh;
-      overflow-y: auto;
-      transition: background-color 0.5s ease, color 0.5s ease;
-    }
-    body.dark-mode {
-      background-color: #121212;
-      color: #ddd;
-    }
-    #main-content {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-    #status-bar-container {
-      position: relative;
-      width: 70px;
-      height: 80vh;
-      margin-right: 20px;
-    }
-    #status-bar {
-      width: 25px;
-      height: 100%;
-      border-radius: 12px;
-      background-color: #ddd;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: flex-end;
-      margin-left: 40px;
-      transition: background-color 0.5s ease;
-    }
-    body.dark-mode #status-bar {
-      background-color: #333;
-    }
-    #fill-bar {
-      width: 100%;
-      height: 0;
-      border-radius: 12px 12px 0 0;
-      background-color: green;
-      transition: height 0.5s ease, background-color 0.5s ease;
-    }
-    #indicators {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 40px;
-      height: 100%;
-      pointer-events: none;
-    }
-    .indicator {
-      position: absolute;
-      left: 0;
-      width: 40px;
-      display: flex;
-      align-items: center;
-      transition: color 0.5s ease;
-    }
-    body.dark-mode .indicator .label {
-      color: #ccc;
-    }
-    .tick {
-      width: 15px;
-      height: 2px;
-      background-color: #555;
-      margin-right: 6px;
-      border-radius: 1px;
-      transition: background-color 0.5s ease;
-    }
-    body.dark-mode .tick {
-      background-color: #aaa;
-    }
-    .label {
-      font-size: 1rem;
-      color: #555;
-      user-select: none;
-      white-space: nowrap;
-    }
-    #container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      user-select: none;
-    }
-    #voltage-value {
-      font-size: 4.5rem;
-      font-weight: 900;
-      margin-bottom: 0;
-    }
-    #voltage-unit {
-      font-size: 1.8rem;
-      color: #555;
-      margin-top: 0;
-      letter-spacing: 1.5px;
-    }
-    body.dark-mode #voltage-unit {
-      color: #bbb;
-    }
-    #battery-percentage {
-      margin-top: 10px;
-      font-size: 2rem;
-      font-weight: 600;
-      color: #444;
-    }
-    body.dark-mode #battery-percentage {
-      color: #ccc;
-    }
-    #battery-status {
-      margin-top: 8px;
-      font-size: 1.6rem;
-      font-weight: 600;
-      color: #666;
-    }
-    body.dark-mode #battery-status {
-      color: #aaa;
-    }
-    .icon {
-      margin-right: 8px;
-    }
-    canvas {
-      max-width: 95vw;
-      touch-action: none;
-    }
-    body.dark-mode canvas {
-      filter: invert(1) hue-rotate(180deg);
-    }
+#include <WiFi.h>
+#include <HTTPClient.h>
 
-    #solar-section {
-      margin-top: 30px;
-      background: #000;
-      padding: 15px 20px;
-      border-radius: 15px;
-      width: 95vw;
-      max-width: 500px;
-      color: #fff;
-      box-shadow: 0 0 12px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    body.dark-mode #solar-section {
-      background: #222;
-      color: #ddd;
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-    }
-    #solar-voltage {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    #solar-bar-container {
-      width: 100%;
-      background: #222;
-      border-radius: 12px;
-      height: 25px;
-      overflow: hidden;
-    }
-    body.dark-mode #solar-bar-container {
-      background: #444;
-    }
-    #solar-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 12px 0 0 12px;
-      background-color: green;
-      transition: width 0.5s ease, background-color 0.5s ease;
-    }
-    #solar-percentage {
-      margin-top: 8px;
-      font-weight: 600;
-      font-size: 1.2rem;
-    }
-    #solar-icon {
-      font-size: 2.2rem;
-      margin-top: 6px;
-    }
+// Wi-Fi Credentials
+const char* ssid = "RAZER";
+const char* password = "shine9823";
 
-    /* Wi-Fi Info */
-    #wifi-info {
-      margin-top: 20px;
-      font-size: 1.5rem;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    #wifi-bars {
-      color: #2c7;
-      font-weight: 700;
-    }
+// Firebase Settings
+const char* firebaseHost = "https://esponline-e1344-default-rtdb.firebaseio.com/";
+const char* firebaseSecret = "Atogxa03O7UVVPnYa389eQ7bj7bzzzPnEg2UbUBD";
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-    .blink {
-      animation: blink 1s infinite;
-    }
-  </style>
-</head>
-<body>
+// Firebase Paths
+const char* batteryPath = "/voltage.json";
+const char* solarPath = "/solar.json";
+const char* wifiSSIDPath = "/wifiSSID.json";
+const char* wifiRSSIPath = "/wifiRSSI.json";
 
-  <div id="main-content">
-    <div id="status-bar-container">
-      <div id="indicators"></div>
-      <div id="status-bar">
-        <div id="fill-bar"></div>
-      </div>
-    </div>
+// ADC Pins
+const int batteryPin = 4;  // GPIO 4 for battery
+const int solarPin   = 5;  // GPIO 5 for solar
 
-    <div id="container">
-      <h1 id="voltage-value"><span class="icon">🔌</span>--.--</h1>
-      <h3 id="voltage-unit">Volts</h3>
-      <div id="battery-percentage"><span class="icon">🔋</span>Battery: --%</div>
-      <div id="battery-status"><span class="icon">🔄</span>Status: --</div>
+// ADC reference
+const float vRef = 3.3;
+const int adcMax = 4095;
 
-      <!-- Wi-Fi Info Added Here -->
-      <div id="wifi-info">
-        <span id="wifi-name">Wi-Fi: --</span>
-        <span id="wifi-bars"></span>
-        <span id="wifi-quality"></span>
-      </div>
-    </div>
-  </div>
+// Voltage Divider Ratios
+const float batteryRatio = (147000.0 + 10000.0) / 10000.0; // ~15.7
+const float solarRatio   = (300000.0 + 10000.0) / 10000.0; // ~31.0
 
-  <canvas id="voltageGraph" width="400" height="200"></canvas>
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
 
-  <div id="solar-section">
-    <div id="solar-voltage">Solar: -- V</div>
-    <div id="solar-bar-container">
-      <div id="solar-fill"></div>
-    </div>
-    <div id="solar-percentage">--%</div>
-    <div id="solar-icon">🌙</div>
-  </div>
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected. IP: " + WiFi.localIP().toString());
+}
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+void loop() {
+  float batteryVolt = analogRead(batteryPin) * (vRef / adcMax) * batteryRatio;
+  float solarVolt   = analogRead(solarPin)   * (vRef / adcMax) * solarRatio;
 
-  <script>
-    const config = {
-      apiKey: "AIzaSyD-b0U1cERqOW05HPE7UNVEv6emCoMopDM",
-      authDomain: "esponline-e1344.firebaseapp.com",
-      databaseURL: "https://esponline-e1344-default-rtdb.firebaseio.com",
-      projectId: "esponline-e1344"
-    };
-    firebase.initializeApp(config);
+  Serial.printf("Battery: %.2f V | Solar: %.2f V\n", batteryVolt, solarVolt);
 
-    const voltageRef = firebase.database().ref("voltage");
-    const solarRef = firebase.database().ref("solar");
-    const wifiRef = firebase.database().ref("wifiInfo");
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
 
-    const batteryMin = 18.0, batteryMax = 30.0;
-    const solarMin = 0.0, solarMax = 100.0;
+    // Battery Voltage Upload
+    String batUrl = String(firebaseHost) + batteryPath + "?auth=" + firebaseSecret;
+    http.begin(batUrl);
+    http.addHeader("Content-Type", "application/json");
+    int batCode = http.PUT(String(batteryVolt, 2));
+    http.end();
 
-    const voltageValue = document.getElementById('voltage-value');
-    const fillBar = document.getElementById('fill-bar');
-    const batteryPercentEl = document.getElementById('battery-percentage');
-    const batteryStatusEl = document.getElementById('battery-status');
-    const indicatorsContainer = document.getElementById('indicators');
+    // Solar Voltage Upload
+    String solarUrl = String(firebaseHost) + solarPath + "?auth=" + firebaseSecret;
+    http.begin(solarUrl);
+    http.addHeader("Content-Type", "application/json");
+    int solarCode = http.PUT(String(solarVolt, 2));
+    http.end();
 
-    const solarVoltEl = document.getElementById('solar-voltage');
-    const solarFill = document.getElementById('solar-fill');
-    const solarPercentEl = document.getElementById('solar-percentage');
-    const solarIcon = document.getElementById('solar-icon');
+    // WiFi SSID Upload
+    String ssidUrl = String(firebaseHost) + wifiSSIDPath + "?auth=" + firebaseSecret;
+    http.begin(ssidUrl);
+    http.addHeader("Content-Type", "application/json");
+    int ssidCode = http.PUT("\"" + WiFi.SSID() + "\""); // string in quotes for JSON
+    http.end();
 
-    const wifiNameEl = document.getElementById('wifi-name');
-    const wifiBarsEl = document.getElementById('wifi-bars');
-    const wifiQualityEl = document.getElementById('wifi-quality');
+    // WiFi RSSI Upload
+    String rssiUrl = String(firebaseHost) + wifiRSSIPath + "?auth=" + firebaseSecret;
+    http.begin(rssiUrl);
+    http.addHeader("Content-Type", "application/json");
+    int rssiCode = http.PUT(String(WiFi.RSSI()));
+    http.end();
 
-    const body = document.body;
+    // Debug prints
+    Serial.printf("Upload status: Battery=%d, Solar=%d, SSID=%d, RSSI=%d\n", batCode, solarCode, ssidCode, rssiCode);
+  }
 
-    let voltageHistory = [];
-    const maxHistory = 10;
-
-    function batteryVoltageToPercent(v) {
-      if (v <= batteryMin) return 0;
-      if (v >= batteryMax) return 100;
-      return Math.round(((v - batteryMin) / (batteryMax - batteryMin)) * 100);
-    }
-
-    function batteryVoltageToBarHeight(v) {
-      if (v < batteryMin) return 0;
-      if (v > batteryMax) return 100;
-      return ((v - batteryMin) / (batteryMax - batteryMin)) * 100;
-    }
-
-    function createIndicators() {
-      const points = [18, 20, 22, 24, 26, 28, 30];
-      indicatorsContainer.innerHTML = '';
-      points.forEach(v => {
-        const ind = document.createElement('div');
-        ind.className = 'indicator';
-        ind.style.bottom = batteryVoltageToBarHeight(v) + '%';
-        const tick = document.createElement('div');
-        tick.className = 'tick';
-        const label = document.createElement('div');
-        label.className = 'label';
-        label.textContent = v + 'V';
-        ind.appendChild(tick);
-        ind.appendChild(label);
-        indicatorsContainer.appendChild(ind);
-      });
-    }
-
-    createIndicators();
-
-    const ctx = document.getElementById('voltageGraph').getContext('2d');
-    const voltageChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Voltage (V)',
-          data: [],
-          backgroundColor: 'rgba(0,128,255,0.1)',
-          borderColor: 'rgba(0,128,255,1)',
-          borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 0
-        }]
-      },
-      options: {
-        animation: false,
-        scales: {
-          y: { min: 17, max: 31, ticks: { color: '#444' } },
-          x: { ticks: { display: false } }
-        },
-        plugins: {
-          zoom: {
-            pan: { enabled: true, mode: 'x' },
-            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
-          }
-        }
-      }
-    });
-
-    function average(arr) {
-      if (arr.length === 0) return 0;
-      return arr.reduce((a, b) => a + b, 0) / arr.length;
-    }
-
-    voltageRef.on("value", snap => {
-      const val = parseFloat(snap.val());
-      if (isNaN(val)) return;
-
-      voltageHistory.push(val);
-      if (voltageHistory.length > maxHistory) voltageHistory.shift();
-
-      const avgVoltage = average(voltageHistory);
-      voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
-
-      const percent = batteryVoltageToPercent(val);
-      fillBar.style.height = percent + '%';
-      batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
-
-      if (voltageHistory.length > 1) {
-        const prevAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
-        batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > prevAvg ? "Charging" : "Discharging"}`;
-      }
-
-      fillBar.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
-
-      const now = new Date();
-      const label = now.toLocaleTimeString().split(" ")[0];
-      if (voltageChart.data.labels.length > 120) {
-        voltageChart.data.labels.shift();
-        voltageChart.data.datasets[0].data.shift();
-      }
-      voltageChart.data.labels.push(label);
-      voltageChart.data.datasets[0].data.push(val);
-      voltageChart.update();
-    });
-
-    solarRef.on("value", snap => {
-      const val = parseFloat(snap.val());
-      if (isNaN(val)) return;
-
-      const percent = Math.round((val - solarMin) / (solarMax - solarMin) * 100);
-      solarVoltEl.textContent = `Solar: ${val.toFixed(2)} V`;
-      solarPercentEl.textContent = `${percent}%`;
-      solarFill.style.width = percent + '%';
-      solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
-
-      if (val < 12) {
-        body.classList.add('dark-mode');
-        solarIcon.textContent = '🌙';
-      } else {
-        body.classList.remove('dark-mode');
-        solarIcon.textContent = '☀️';
-      }
-    });
-
-    // Wi-Fi signal bars logic
-    function rssiToBars(rssi) {
-      if (rssi >= -50) return 4;
-      else if (rssi >= -60) return 3;
-      else if (rssi >= -70) return 2;
-      else if (rssi >= -80) return 1;
-      else return 0;
-    }
-
-    function rssiToQuality(rssi) {
-      if (rssi >= -50) return "Excellent";
-      else if (rssi >= -60) return "Good";
-      else if (rssi >= -70) return "Fair";
-      else if (rssi >= -80) return "Weak";
-      else return "No Signal";
-    }
-
-    wifiRef.on("value", snap => {
-      const data = snap.val();
-      if (!data) return;
-
-      const ssid = data.ssid || "--";
-      const rssi = data.rssi !== undefined ? parseInt(data.rssi) : null;
-
-      wifiNameEl.textContent = `Wi-Fi: ${ssid}`;
-
-      if (rssi !== null) {
-        const bars = rssiToBars(rssi);
-        const quality = rssiToQuality(rssi);
-        wifiBarsEl.textContent = "📶".repeat(bars);
-        wifiQualityEl.textContent = quality;
-      } else {
-        wifiBarsEl.textContent = "";
-        wifiQualityEl.textContent = "";
-      }
-    });
-  </script>
-
-</body>
-</html>
+  delay(1000); // 1 second interval
+}
