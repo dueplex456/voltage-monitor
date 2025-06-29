@@ -1,84 +1,190 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
+const config = {
+  apiKey: "AIzaSyD-b0U1cERqOW05HPE7UNVEv6emCoMopDM",
+  authDomain: "esponline-e1344.firebaseapp.com",
+  databaseURL: "https://esponline-e1344-default-rtdb.firebaseio.com",
+  projectId: "esponline-e1344"
+};
+firebase.initializeApp(config);
 
-// Wi-Fi Credentials
-const char* ssid = "RAZER";
-const char* password = "shine9823";
+const voltageRef = firebase.database().ref("voltage");
+const solarRef = firebase.database().ref("solar");
+const wifiRef = firebase.database().ref("wifiInfo");
 
-// Firebase Settings
-const char* firebaseHost = "https://esponline-e1344-default-rtdb.firebaseio.com/";
-const char* firebaseSecret = "Atogxa03O7UVVPnYa389eQ7bj7bzzzPnEg2UbUBD";
+const batteryMin = 18.0, batteryMax = 30.0;
+const solarMin = 0.0, solarMax = 100.0;
 
-// Firebase Paths
-const char* batteryPath = "/voltage.json";
-const char* solarPath = "/solar.json";
-const char* wifiSSIDPath = "/wifiSSID.json";
-const char* wifiRSSIPath = "/wifiRSSI.json";
+const voltageValue = document.getElementById('voltage-value');
+const fillBar = document.getElementById('fill-bar');
+const batteryPercentEl = document.getElementById('battery-percentage');
+const batteryStatusEl = document.getElementById('battery-status');
+const indicatorsContainer = document.getElementById('indicators');
 
-// ADC Pins
-const int batteryPin = 4;  // GPIO 4 for battery
-const int solarPin   = 5;  // GPIO 5 for solar
+const solarVoltEl = document.getElementById('solar-voltage');
+const solarFill = document.getElementById('solar-fill');
+const solarPercentEl = document.getElementById('solar-percentage');
+const solarIcon = document.getElementById('solar-icon');
 
-// ADC reference
-const float vRef = 3.3;
-const int adcMax = 4095;
+const wifiNameEl = document.getElementById('wifi-name');
+const wifiBarsEl = document.getElementById('wifi-bars');
+const wifiQualityEl = document.getElementById('wifi-quality');
 
-// Voltage Divider Ratios
-const float batteryRatio = (147000.0 + 10000.0) / 10000.0; // ~15.7
-const float solarRatio   = (300000.0 + 10000.0) / 10000.0; // ~31.0
+const body = document.body;
 
-void setup() {
-  Serial.begin(115200);
-  WiFi.begin(ssid, password);
+let voltageHistory = [];
+const maxHistory = 10;
 
-  Serial.print("Connecting to Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nConnected. IP: " + WiFi.localIP().toString());
+function batteryVoltageToPercent(v) {
+  if (v <= batteryMin) return 0;
+  if (v >= batteryMax) return 100;
+  return Math.round(((v - batteryMin) / (batteryMax - batteryMin)) * 100);
 }
 
-void loop() {
-  float batteryVolt = analogRead(batteryPin) * (vRef / adcMax) * batteryRatio;
-  float solarVolt   = analogRead(solarPin)   * (vRef / adcMax) * solarRatio;
+function batteryVoltageToBarHeight(v) {
+  if (v < batteryMin) return 0;
+  if (v > batteryMax) return 100;
+  return ((v - batteryMin) / (batteryMax - batteryMin)) * 100;
+}
 
-  Serial.printf("Battery: %.2f V | Solar: %.2f V\n", batteryVolt, solarVolt);
+function createIndicators() {
+  const points = [18, 20, 22, 24, 26, 28, 30];
+  indicatorsContainer.innerHTML = '';
+  points.forEach(v => {
+    const ind = document.createElement('div');
+    ind.className = 'indicator';
+    ind.style.bottom = batteryVoltageToBarHeight(v) + '%';
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = v + 'V';
+    ind.appendChild(tick);
+    ind.appendChild(label);
+    indicatorsContainer.appendChild(ind);
+  });
+}
 
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
+createIndicators();
 
-    // Battery Voltage Upload
-    String batUrl = String(firebaseHost) + batteryPath + "?auth=" + firebaseSecret;
-    http.begin(batUrl);
-    http.addHeader("Content-Type", "application/json");
-    int batCode = http.PUT(String(batteryVolt, 2));
-    http.end();
+const ctx = document.getElementById('voltageGraph').getContext('2d');
+const voltageChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Voltage (V)',
+      data: [],
+      backgroundColor: 'rgba(0,128,255,0.1)',
+      borderColor: 'rgba(0,128,255,1)',
+      borderWidth: 2,
+      tension: 0.3,
+      pointRadius: 0
+    }]
+  },
+  options: {
+    animation: false,
+    scales: {
+      y: { min: 17, max: 31, ticks: { color: '#444' } },
+      x: { ticks: { display: false } }
+    },
+    plugins: {
+      zoom: {
+        pan: { enabled: true, mode: 'x' },
+        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+      }
+    }
+  }
+});
 
-    // Solar Voltage Upload
-    String solarUrl = String(firebaseHost) + solarPath + "?auth=" + firebaseSecret;
-    http.begin(solarUrl);
-    http.addHeader("Content-Type", "application/json");
-    int solarCode = http.PUT(String(solarVolt, 2));
-    http.end();
+function average(arr) {
+  if (arr.length === 0) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
 
-    // WiFi SSID Upload
-    String ssidUrl = String(firebaseHost) + wifiSSIDPath + "?auth=" + firebaseSecret;
-    http.begin(ssidUrl);
-    http.addHeader("Content-Type", "application/json");
-    int ssidCode = http.PUT("\"" + WiFi.SSID() + "\""); // string in quotes for JSON
-    http.end();
+voltageRef.on("value", snap => {
+  const val = parseFloat(snap.val());
+  if (isNaN(val)) return;
 
-    // WiFi RSSI Upload
-    String rssiUrl = String(firebaseHost) + wifiRSSIPath + "?auth=" + firebaseSecret;
-    http.begin(rssiUrl);
-    http.addHeader("Content-Type", "application/json");
-    int rssiCode = http.PUT(String(WiFi.RSSI()));
-    http.end();
+  voltageHistory.push(val);
+  if (voltageHistory.length > maxHistory) voltageHistory.shift();
 
-    // Debug prints
-    Serial.printf("Upload status: Battery=%d, Solar=%d, SSID=%d, RSSI=%d\n", batCode, solarCode, ssidCode, rssiCode);
+  const avgVoltage = average(voltageHistory);
+  voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
+
+  const percent = batteryVoltageToPercent(val);
+  fillBar.style.height = percent + '%';
+  batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
+
+  if (voltageHistory.length > 1) {
+    const prevAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
+    batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > prevAvg ? "Charging" : "Discharging"}`;
   }
 
-  delay(1000); // 1 second interval
+  fillBar.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+  const now = new Date();
+  const label = now.toLocaleTimeString().split(" ")[0];
+  if (voltageChart.data.labels.length > 120) {
+    voltageChart.data.labels.shift();
+    voltageChart.data.datasets[0].data.shift();
+  }
+  voltageChart.data.labels.push(label);
+  voltageChart.data.datasets[0].data.push(val);
+  voltageChart.update();
+});
+
+solarRef.on("value", snap => {
+  const val = parseFloat(snap.val());
+  if (isNaN(val)) return;
+
+  const percent = Math.round((val - solarMin) / (solarMax - solarMin) * 100);
+  solarVoltEl.textContent = `Solar: ${val.toFixed(2)} V`;
+  solarPercentEl.textContent = `${percent}%`;
+  solarFill.style.width = percent + '%';
+  solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+  // THIS IS YOUR ORIGINAL DARK MODE LOGIC, KEEPING IT INTACT
+  if (val < 12) {
+    body.classList.add('dark-mode');
+    solarIcon.textContent = '🌙';
+  } else {
+    body.classList.remove('dark-mode');
+    solarIcon.textContent = '☀️';
+  }
+});
+
+// Wi-Fi signal bars logic (simple)
+function rssiToBars(rssi) {
+  if (rssi >= -50) return 4;
+  else if (rssi >= -60) return 3;
+  else if (rssi >= -70) return 2;
+  else if (rssi >= -80) return 1;
+  else return 0;
 }
+
+function rssiToQuality(rssi) {
+  if (rssi >= -50) return "Excellent";
+  else if (rssi >= -60) return "Good";
+  else if (rssi >= -70) return "Fair";
+  else if (rssi >= -80) return "Weak";
+  else return "No Signal";
+}
+
+wifiRef.on("value", snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  const ssid = data.ssid || "--";
+  const rssi = data.rssi !== undefined ? parseInt(data.rssi) : null;
+
+  wifiNameEl.textContent = `Wi-Fi: ${ssid}`;
+
+  if (rssi !== null) {
+    const bars = rssiToBars(rssi);
+    const quality = rssiToQuality(rssi);
+    wifiBarsEl.textContent = "📶".repeat(bars);
+    wifiQualityEl.textContent = quality;
+  } else {
+    wifiBarsEl.textContent = "";
+    wifiQualityEl.textContent = "";
+  }
+});
