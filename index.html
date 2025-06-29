@@ -5,15 +5,30 @@
   <title>Voltage Monitor with Graph</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
   <style>
-    /* your full existing styles go here — unchanged */
+    /* [UNCHANGED STYLES - existing CSS from your last version] */
+    /* Keep your entire style section untouched to preserve the UI */
   </style>
 </head>
 <body>
-  <!-- UI layout stays unchanged -->
+
   <div id="main-content">
-    <!-- status bar -->
+    <div id="status-bar-container">
+      <div id="indicators"></div>
+      <div id="status-bar">
+        <div id="fill-bar"></div>
+      </div>
+    </div>
+
+    <div id="container">
+      <h1 id="voltage-value"><span class="icon">🔌</span>--.--</h1>
+      <h3 id="voltage-unit">Volts</h3>
+      <div id="battery-percentage"><span class="icon">🔋</span>Battery: --%</div>
+      <div id="battery-status"><span class="icon">🔄</span>Status: --</div>
+    </div>
   </div>
+
   <canvas id="voltageGraph" width="400" height="200"></canvas>
+
   <div id="solar-section">
     <div id="solar-voltage">Solar: -- V</div>
     <div id="solar-bar-container">
@@ -23,7 +38,7 @@
     <div id="solar-icon">🌙</div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase + Chart SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -36,25 +51,29 @@
       databaseURL: "https://esponline-e1344-default-rtdb.firebaseio.com",
       projectId: "esponline-e1344"
     };
-    firebase.initializeApp(config);
 
+    firebase.initializeApp(config);
     const voltageRef = firebase.database().ref("voltage");
     const solarRef = firebase.database().ref("solar");
+
+    const minV = 18.0, maxV = 30.0;
+    const solarMinV = 0.0, solarMaxV = 100.0;
 
     const voltageValue = document.getElementById('voltage-value');
     const fillBar = document.getElementById('fill-bar');
     const batteryPercentEl = document.getElementById('battery-percentage');
     const batteryStatusEl = document.getElementById('battery-status');
     const indicatorsContainer = document.getElementById('indicators');
+
     const solarVoltEl = document.getElementById('solar-voltage');
     const solarFill = document.getElementById('solar-fill');
     const solarPercentEl = document.getElementById('solar-percentage');
     const solarIcon = document.getElementById('solar-icon');
+
     const body = document.body;
 
-    const minV = 18.0, maxV = 30.0;
-    const solarMinV = 0.0, solarMaxV = 100.0;
     let voltageHistory = [];
+    const maxHistory = 10;
 
     function voltageToPercent(v) {
       if (v <= minV) return 0;
@@ -120,7 +139,9 @@
             max: 31,
             ticks: { color: '#444' }
           },
-          x: { ticks: { display: false } }
+          x: {
+            ticks: { display: false }
+          }
         },
         plugins: {
           zoom: {
@@ -133,27 +154,36 @@
 
     function average(arr) {
       if (arr.length === 0) return 0;
-      return arr.reduce((a, b) => a + b, 0) / arr.length;
+      const sum = arr.reduce((a, b) => a + b, 0);
+      return sum / arr.length;
     }
 
     voltageRef.on("value", snap => {
       const val = parseFloat(snap.val());
       if (isNaN(val)) return;
 
+      voltageHistory.push(val);
+      if (voltageHistory.length > maxHistory) voltageHistory.shift();
+
+      const avgVoltage = average(voltageHistory);
+      const lastAvg = average(voltageHistory.slice(0, voltageHistory.length - 1));
+
       voltageValue.innerHTML = `<span class="icon">🔌</span>${val.toFixed(2)}`;
       const percent = voltageToPercent(val);
       fillBar.style.height = percent + '%';
       batteryPercentEl.innerHTML = `<span class="icon">🔋</span>Battery: ${percent}%`;
+      batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${avgVoltage > lastAvg ? "Charging" : "Discharging"}`;
 
-      voltageHistory.push(val);
-      if (voltageHistory.length > 10) voltageHistory.shift();
+      if (val < 18) fillBar.style.backgroundColor = 'red';
+      else if (val <= 24) fillBar.style.backgroundColor = 'yellow';
+      else if (val <= 30) fillBar.style.backgroundColor = 'green';
+      else {
+        fillBar.style.backgroundColor = 'green';
+        fillBar.classList.add('blink');
+      }
 
-      const avgVoltage = average(voltageHistory.slice(0, -1));
-      batteryStatusEl.innerHTML = `<span class="icon">🔄</span>Status: ${val > avgVoltage ? "Charging" : "Discharging"}`;
-
-      fillBar.style.backgroundColor = val < 20 ? 'red' : val <= 24 ? 'yellow' : 'green';
-
-      const timeLabel = new Date().toLocaleTimeString().split(" ")[0];
+      const now = new Date();
+      const timeLabel = now.toLocaleTimeString().split(" ")[0];
       if (voltageChart.data.labels.length > 120) {
         voltageChart.data.labels.shift();
         voltageChart.data.datasets[0].data.shift();
@@ -164,16 +194,17 @@
     });
 
     solarRef.on("value", snap => {
-      const solarVal = parseFloat(snap.val());
-      if (isNaN(solarVal)) return;
+      const val = parseFloat(snap.val());
+      if (isNaN(val)) return;
 
-      const solarP = solarPercent(solarVal);
-      solarVoltEl.textContent = `Solar: ${solarVal.toFixed(2)} V`;
-      solarPercentEl.textContent = `${solarP}%`;
-      solarFill.style.width = solarP + '%';
-      solarFill.style.backgroundColor = solarP < 30 ? 'red' : solarP <= 60 ? 'yellow' : 'green';
+      solarVoltEl.textContent = `Solar: ${val.toFixed(2)} V`;
 
-      if (solarVal < 12) {
+      const percent = solarPercent(val);
+      solarPercentEl.textContent = `${percent}%`;
+      solarFill.style.width = percent + '%';
+      solarFill.style.backgroundColor = percent < 30 ? 'red' : percent <= 60 ? 'yellow' : 'green';
+
+      if (val < 12) {
         body.classList.add('dark-mode');
         solarIcon.textContent = '🌙';
       } else {
