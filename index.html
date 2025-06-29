@@ -230,6 +230,12 @@
     <div id="solar-icon">🌙</div>
   </div>
 
+<div id="wifi-info" style="margin-top: 20px; font-size: 1.3rem;">
+  <strong>WiFi:</strong> <span id="wifi-name">--</span>  
+  <span id="wifi-strength">-- dBm</span>
+</div>
+
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -329,6 +335,27 @@
       }
     }
   });
+
+const wifiSSIDRef = firebase.database().ref("wifiSSID");
+const wifiRSSIRef = firebase.database().ref("wifiRSSI");
+
+const wifiNameEl = document.getElementById('wifi-name');
+const wifiStrengthEl = document.getElementById('wifi-strength');
+
+wifiSSIDRef.on("value", snap => {
+  const ssid = snap.val() || "--";
+  wifiNameEl.textContent = ssid;
+});
+
+wifiRSSIRef.on("value", snap => {
+  const rssi = snap.val();
+  if (typeof rssi === "number") {
+    wifiStrengthEl.textContent = rssi + " dBm";
+  } else {
+    wifiStrengthEl.textContent = "-- dBm";
+  }
+});
+
 
   function average(arr) {
     if (arr.length === 0) return 0;
